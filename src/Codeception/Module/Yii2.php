@@ -60,6 +60,10 @@ use yii\web\IdentityInterface;
  *   transaction and roll it back after the test. Should be disabled for
  *   acceptance testing.
  * * `cleanup` - (default: `true`) cleanup fixtures after the test
+ * * `gcMemoryThresholdMb` - (по умолчанию: `2048`) порог занятой памяти в МиБ
+ *   (1 МиБ = 1024 × 1024 байт). При сбросе приложения сборка мусора запускается,
+ *   если `memory_get_usage(true)` достиг порога или превысил его.
+ *   Порог не зависит от `memory_limit`; автоматический GC PHP остаётся включённым.
  * * `ignoreCollidingDSN` - (default: `false`) When 2 database connections use
  *   the same DSN but different settings an exception will be thrown. Set this to
  *   true to disable this behavior.
@@ -90,6 +94,7 @@ use yii\web\IdentityInterface;
  *     enabled:
  *         - Yii2:
  *             configFile: 'path/to/config.php'
+ *             gcMemoryThresholdMb: 2048
  * ```
  *
  * ## Parts
@@ -184,6 +189,7 @@ class Yii2 extends Framework implements ActiveRecord, MultiSession, PartedModule
         'recreateApplication' => false,
         'closeSessionOnRecreateApplication' => true,
         'applicationClass' => null,
+        'gcMemoryThresholdMb' => 2048,
     ];
 
     protected array $requiredFields = ['configFile'];

@@ -93,6 +93,11 @@ class Yii2 extends Client
      */
     public string|null $applicationClass = null;
 
+    /**
+     * @var int Порог занятой памяти в МиБ для запуска принудительной сборки мусора.
+     */
+    public int $gcMemoryThresholdMb = 2048;
+
 
     private array $emails = [];
 
@@ -127,7 +132,9 @@ class Yii2 extends Client
         }
         Yii::setLogger(null);
         // This resolves an issue with database connections not closing properly.
-        gc_collect_cycles();
+        if (memory_get_usage(true) >= $this->gcMemoryThresholdMb * 1024 * 1024) {
+            gc_collect_cycles();
+        }
     }
 
     /**
