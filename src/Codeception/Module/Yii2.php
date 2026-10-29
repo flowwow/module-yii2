@@ -60,6 +60,10 @@ use yii\web\IdentityInterface;
  *   transaction and roll it back after the test. Should be disabled for
  *   acceptance testing.
  * * `cleanup` - (default: `true`) cleanup fixtures after the test
+ * * `gcInterval` - положительное число тестов между принудительными сборками мусора.
+ *   Значение 1 по умолчанию сохраняет сборку при каждом сбросе приложения.
+ *   При значении больше 1 сборка выполняется после полной очистки каждых N тестов
+ *   и в конце набора; автоматический GC PHP остаётся включённым.
  * * `ignoreCollidingDSN` - (default: `false`) When 2 database connections use
  *   the same DSN but different settings an exception will be thrown. Set this to
  *   true to disable this behavior.
@@ -184,6 +188,7 @@ class Yii2 extends Framework implements ActiveRecord, MultiSession, PartedModule
         'recreateApplication' => false,
         'closeSessionOnRecreateApplication' => true,
         'applicationClass' => null,
+        'gcInterval' => 1,
     ];
 
     protected array $requiredFields = ['configFile'];
@@ -212,6 +217,8 @@ class Yii2 extends Framework implements ActiveRecord, MultiSession, PartedModule
 
     private Logger $yiiLogger;
 
+    private int $testsSinceGarbageCollection = 0;
+
     private function getClient(): \Codeception\Lib\Connector\Yii2|null
     {
         if (isset($this->client) && !$this->client instanceof \Codeception\Lib\Connector\Yii2) {
@@ -239,7 +246,8 @@ class Yii2 extends Framework implements ActiveRecord, MultiSession, PartedModule
     protected function onReconfigure(): void
     {
         parent::onReconfigure();
-        $this->getClient()->resetApplication();
+        $this->validateConfig();
+        $this->resetApplication();
         $this->configureClient($this->config);
         $this->yiiLogger->getAndClearLog();
         $this->getClient()->startApp($this->yiiLogger);
@@ -268,6 +276,10 @@ class Yii2 extends Framework implements ActiveRecord, MultiSession, PartedModule
     protected function validateConfig(): void
     {
         parent::validateConfig();
+
+        if (!is_int($this->config['gcInterval']) || $this->config['gcInterval'] < 1) {
+            throw new ModuleConfigException(__CLASS__, 'gcInterval должен быть целым положительным числом.');
+        }
 
         $pathToConfig = codecept_absolute_path($this->config['configFile']);
         if (!is_file($pathToConfig)) {
@@ -301,7 +313,7 @@ class Yii2 extends Framework implements ActiveRecord, MultiSession, PartedModule
                 $this->getClient()->$key = $value;
             }
         }
-        $this->getClient()->resetApplication();
+        $this->resetApplication();
     }
 
     /**
@@ -382,7 +394,7 @@ class Yii2 extends Framework implements ActiveRecord, MultiSession, PartedModule
             $this->loadedFixtures = [];
         }
 
-        $this->getClient()?->resetApplication();
+        $this->resetApplication();
 
         if (isset($this->connectionWatcher)) {
             $this->connectionWatcher->stop();
@@ -391,6 +403,26 @@ class Yii2 extends Framework implements ActiveRecord, MultiSession, PartedModule
         }
 
         parent::_after($test);
+
+        if ($this->config['gcInterval'] > 1 && ++$this->testsSinceGarbageCollection >= $this->config['gcInterval']) {
+            unset($fixture);
+            $this->collectGarbage();
+        }
+    }
+
+    private function resetApplication(): void
+    {
+        $client = $this->getClient();
+        $client?->resetApplication();
+        if ($client?->gcInterval === 1) {
+            $this->testsSinceGarbageCollection = 0;
+        }
+    }
+
+    private function collectGarbage(): void
+    {
+        gc_collect_cycles();
+        $this->testsSinceGarbageCollection = 0;
     }
 
     public function _failed(TestInterface $test, $fail): void
@@ -838,6 +870,9 @@ class Yii2 extends Framework implements ActiveRecord, MultiSession, PartedModule
         codecept_debug('Suite done, restoring $_SERVER to original');
 
         $_SERVER = $this->server;
+        if ($this->testsSinceGarbageCollection > 0 || $this->config['gcInterval'] > 1) {
+            $this->collectGarbage();
+        }
     }
 
     /**
