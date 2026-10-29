@@ -60,6 +60,8 @@ use yii\web\IdentityInterface;
  *   transaction and roll it back after the test. Should be disabled for
  *   acceptance testing.
  * * `cleanup` - (default: `true`) cleanup fixtures after the test
+ * * `gcMemoryThresholdPercent` - (по умолчанию: `80`) процент от `memory_limit`
+ *   для запуска принудительной сборки мусора при сбросе приложения.
  * * `ignoreCollidingDSN` - (default: `false`) When 2 database connections use
  *   the same DSN but different settings an exception will be thrown. Set this to
  *   true to disable this behavior.
@@ -184,6 +186,7 @@ class Yii2 extends Framework implements ActiveRecord, MultiSession, PartedModule
         'recreateApplication' => false,
         'closeSessionOnRecreateApplication' => true,
         'applicationClass' => null,
+        'gcMemoryThresholdPercent' => 80,
     ];
 
     protected array $requiredFields = ['configFile'];
