@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace tests\closeConnections;
 
 use Codeception\Example;
@@ -7,7 +9,7 @@ use tests\fixtures\EmptyFixture;
 use tests\FunctionalTester;
 use tests\helpers\SqlliteHelper;
 
-class FixturesCest
+final class FixturesCest
 {
     public function _fixtures()
     {
@@ -24,12 +26,10 @@ class FixturesCest
     }
 
     /**
-     * @param FunctionalTester $I
      * @dataProvider numberProvider
      */
     public function NoConnections(FunctionalTester $I, Example $example)
     {
-        $I->assertEquals(SqlliteHelper::connectionCount(), $example['count']);
+        $I->assertSame(SqlliteHelper::connectionCount(), $example['count']);
     }
-
 }

@@ -1,17 +1,31 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Codeception\Lib\Connector\Yii2;
 
 use Codeception\Util\Debug;
+use SplQueue;
+use yii\base\Exception as YiiException;
 use yii\helpers\VarDumper;
+use yii\log\Logger as YiiLogger;
 
-class Logger extends \yii\log\Logger
+final class Logger extends YiiLogger
 {
-    private \SplQueue $logQueue;
+    /**
+     * @var SplQueue<string>
+     */
+    private SplQueue $logQueue;
 
-    public function __construct(private int $maxLogItems = 5, $config = [])
-    {
+    /**
+     * @param array<string, mixed> $config
+     */
+    public function __construct(
+        private readonly int $maxLogItems = 5,
+        array $config = []
+    ) {
         parent::__construct($config);
-        $this->logQueue = new \SplQueue();
+        $this->logQueue = new SplQueue();
     }
 
     public function init(): void
@@ -20,33 +34,33 @@ class Logger extends \yii\log\Logger
     }
 
     /**
-     * @param string|array<mixed>|\yii\base\Exception $message
-     * @param $level
-     * @param $category
-     * @return void
+     * @param string|array<mixed>|YiiException                       $message
+     * @param self::LEVEL_INFO|self::LEVEL_WARNING|self::LEVEL_ERROR $level
+     * @param string                                                 $category
      */
     public function log($message, $level, $category = 'application'): void
     {
-        if (!in_array($level, [
-            \yii\log\Logger::LEVEL_INFO,
-            \yii\log\Logger::LEVEL_WARNING,
-            \yii\log\Logger::LEVEL_ERROR,
-        ])) {
+        if (! in_array(
+            $level,
+            [
+                self::LEVEL_INFO,
+                self::LEVEL_WARNING,
+                self::LEVEL_ERROR,
+                ],
+            true
+        )
+        ) {
             return;
         }
         if (str_starts_with($category, 'yii\db\Command')) {
             return; // don't log queries
         }
-
         // https://github.com/Codeception/Codeception/issues/3696
-        if ($message instanceof \yii\base\Exception) {
+        if ($message instanceof YiiException) {
             $message = $message->__toString();
         }
-
         $logMessage = "[$category] " . VarDumper::export($message);
-
         Debug::debug($logMessage);
-
         $this->logQueue->enqueue($logMessage);
         if ($this->logQueue->count() > $this->maxLogItems) {
             $this->logQueue->dequeue();
@@ -55,12 +69,8 @@ class Logger extends \yii\log\Logger
 
     public function getAndClearLog(): string
     {
-        $completeStr = '';
-        foreach ($this->logQueue as $item) {
-            $completeStr .= $item . PHP_EOL;
-        }
-        $this->logQueue = new \SplQueue();
-
-        return $completeStr;
+        $logs = iterator_to_array($this->logQueue);
+        $this->logQueue = new SplQueue();
+        return implode(PHP_EOL, $logs) . PHP_EOL;
     }
 }

@@ -1,26 +1,28 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Codeception\Lib\Connector\Yii2;
 
+use Closure;
 use yii\mail\BaseMailer;
+use yii\symfonymailer\Message;
 
-class TestMailer extends BaseMailer
+final class TestMailer extends BaseMailer
 {
-    public $messageClass = \yii\symfonymailer\Message::class;
+    public $messageClass = Message::class;
 
-    /**
-     * @var \Closure
-     */
-    public $callback;
+    public Closure $callback;
 
-    protected function sendMessage($message)
+    protected function sendMessage(mixed $message): bool
     {
-        call_user_func($this->callback, $message);
+        ($this->callback)($message);
         return true;
     }
-    
-    protected function saveMessage($message)
+
+    protected function saveMessage(mixed $message): bool
     {
-        call_user_func($this->callback, $message);
+        ($this->callback)($message);
         return true;
     }
 }

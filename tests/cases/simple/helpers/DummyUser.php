@@ -1,14 +1,13 @@
 <?php
 
+declare(strict_types=1);
 
 namespace app\simple\helpers;
 
-
 use yii\web\IdentityInterface;
 
-class DummyUser implements IdentityInterface
+final class DummyUser implements IdentityInterface
 {
-
     /**
      * Finds an identity by the given ID.
      * @param string|int $id the ID to be looked for
@@ -19,7 +18,7 @@ class DummyUser implements IdentityInterface
     public static function findIdentity($id)
     {
         return null;
-        // TODO: Implement findIdentity() method.
+
     }
 
     /**
@@ -33,7 +32,7 @@ class DummyUser implements IdentityInterface
      */
     public static function findIdentityByAccessToken($token, $type = null)
     {
-        // TODO: Implement findIdentityByAccessToken() method.
+
     }
 
     /**
@@ -42,7 +41,7 @@ class DummyUser implements IdentityInterface
      */
     public function getId()
     {
-        // TODO: Implement getId() method.
+
     }
 
     /**
@@ -59,7 +58,7 @@ class DummyUser implements IdentityInterface
      */
     public function getAuthKey()
     {
-        // TODO: Implement getAuthKey() method.
+
     }
 
     /**
@@ -72,6 +71,6 @@ class DummyUser implements IdentityInterface
      */
     public function validateAuthKey($authKey)
     {
-        // TODO: Implement validateAuthKey() method.
+
     }
 }

@@ -1,7 +1,9 @@
 <?php
 
-class PageCest {
+declare(strict_types=1);
 
+final class PageCest
+{
     public function testCache(\tests\FunctionalTester $I)
     {
         $I->amOnRoute('user/index');

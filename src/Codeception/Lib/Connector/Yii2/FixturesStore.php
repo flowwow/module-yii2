@@ -1,32 +1,33 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Codeception\Lib\Connector\Yii2;
 
 use yii\test\FixtureTrait;
 use yii\test\InitDbFixture;
 
-class FixturesStore
+final class FixturesStore
 {
     use FixtureTrait;
 
-    protected $data;
-
     /**
      * Expects fixtures config
-     *
-     * FixturesStore constructor.
-     * @param $data
      */
-    public function __construct($data)
-    {
-        $this->data = $data;
+    public function __construct(
+        protected mixed $data
+    ) {
     }
 
-    public function fixtures()
+    public function fixtures(): mixed
     {
         return $this->data;
     }
 
-    public function globalFixtures()
+    /**
+     * @return array{initDbFixture: array{class: class-string}}
+     */
+    public function globalFixtures(): array
     {
         return [
             'initDbFixture' => [
