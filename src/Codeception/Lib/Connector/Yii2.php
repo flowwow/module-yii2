@@ -94,9 +94,9 @@ class Yii2 extends Client
     public string|null $applicationClass = null;
 
     /**
-     * @var int Процент от memory_limit для запуска принудительной сборки мусора.
+     * @var int Порог занятой памяти в МиБ для запуска принудительной сборки мусора.
      */
-    public int $gcMemoryThresholdPercent = 80;
+    public int $gcMemoryThresholdMb = 2048;
 
 
     private array $emails = [];
@@ -131,15 +131,8 @@ class Yii2 extends Client
             \yii\base\Event::offAll();
         }
         Yii::setLogger(null);
-        $memoryLimit = trim(ini_get('memory_limit'));
-        $memoryLimitBytes = intval($memoryLimit, 0) * match (strtolower(substr($memoryLimit, -1))) {
-            'k' => 1024,
-            'm' => 1024 * 1024,
-            'g' => 1024 * 1024 * 1024,
-            default => 1,
-        };
         // This resolves an issue with database connections not closing properly.
-        if ($memoryLimitBytes > 0 && memory_get_usage(true) >= $memoryLimitBytes * $this->gcMemoryThresholdPercent / 100) {
+        if (memory_get_usage(true) >= $this->gcMemoryThresholdMb * 1024 * 1024) {
             gc_collect_cycles();
         }
     }
