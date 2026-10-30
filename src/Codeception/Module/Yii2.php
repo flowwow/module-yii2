@@ -67,6 +67,10 @@ use yii\web\IdentityInterface;
  *   transaction and roll it back after the test. Should be disabled for
  *   acceptance testing.
  * * `cleanup` - (default: `true`) cleanup fixtures after the test
+ * * `gcMemoryThresholdMb` - (по умолчанию: `2048`) порог занятой памяти в МиБ
+ *   (1 МиБ = 1024 × 1024 байт). При сбросе приложения сборка мусора запускается,
+ *   если `memory_get_usage(true)` достиг порога или превысил его.
+ *   Порог не зависит от `memory_limit`; автоматический GC PHP остаётся включённым.
  * * `ignoreCollidingDSN` - (default: `false`) When 2 database connections use
  *   the same DSN but different settings an exception will be thrown. Set this to
  *   true to disable this behavior.
@@ -102,6 +106,7 @@ use yii\web\IdentityInterface;
  *     enabled:
  *         - Yii2:
  *             configFile: 'path/to/config.php'
+ *             gcMemoryThresholdMb: 2048
  * ```
  *
  * ## Parts
@@ -191,7 +196,8 @@ use yii\web\IdentityInterface;
  *     recreateComponents: list<string>,
  *     recreateApplication: bool,
  *     closeSessionOnRecreateApplication: bool,
- *     applicationClass: class-string<\yii\base\Application>|null
+ *     applicationClass: class-string<\yii\base\Application>|null,
+ *     gcMemoryThresholdMb: int
  *   }
  *
  * @phpstan-type ClientConfig array{
@@ -202,7 +208,8 @@ use yii\web\IdentityInterface;
  *     recreateComponents: list<string>,
  *     recreateApplication: bool,
  *     closeSessionOnRecreateApplication: bool,
- *     applicationClass: class-string<\yii\base\Application>|null
+ *     applicationClass: class-string<\yii\base\Application>|null,
+ *     gcMemoryThresholdMb: int
  *  }
  *
  * @phpstan-type ValidConfig (ModuleConfig & array{
@@ -237,6 +244,7 @@ final class Yii2 extends Framework implements ActiveRecord, PartedModule
         'mailMethod' => Yii2Connector::MAIL_CATCH,
         'closeSessionOnRecreateApplication' => true,
         'applicationClass' => null,
+        'gcMemoryThresholdMb' => 2048,
     ];
 
     /**
@@ -374,6 +382,7 @@ final class Yii2 extends Framework implements ActiveRecord, PartedModule
         $client->closeSessionOnRecreateApplication = $settings['closeSessionOnRecreateApplication'];
         $client->applicationClass = $settings['applicationClass'];
         $client->mailMethod = $settings['mailMethod'];
+        $client->gcMemoryThresholdMb = $settings['gcMemoryThresholdMb'];
         $client->resetApplication();
     }
 

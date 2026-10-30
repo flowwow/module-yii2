@@ -131,9 +131,19 @@ final class Yii2 extends Client
     public string|null $applicationClass = null;
 
     /**
+     * @var int Порог занятой памяти в МиБ для запуска принудительной сборки мусора.
+     */
+    public int $gcMemoryThresholdMb = 2048;
+
+    /**
      * @var list<MessageInterface>
      */
     private array $emails = [];
+
+    /**
+     * @var array<string, \yii\base\Application> Кеш приложений для клонирования.
+     */
+    private static array $cloneApps = [];
 
     /**
      * @internal
@@ -166,7 +176,9 @@ final class Yii2 extends Client
         Event::offAll();
         Yii::setLogger(null);
         // This resolves an issue with database connections not closing properly.
-        gc_collect_cycles();
+        if (memory_get_usage(true) >= $this->gcMemoryThresholdMb * 1024 * 1024) {
+            gc_collect_cycles();
+        }
     }
 
     /**
@@ -305,12 +317,16 @@ final class Yii2 extends Client
             self::MAIL_IGNORE => null// Do nothing
         };
 
-        // @phpstan-ignore argument.templateType
-        $app = Yii::createObject($config);
-        if (! $app instanceof \yii\base\Application) {
-            throw new ModuleConfigException($this, "Failed to initialize Yii2 app");
+        $hash = md5((string) json_encode($config));
+        if (! isset(self::$cloneApps[$hash])) {
+            // @phpstan-ignore argument.templateType
+            $app = Yii::createObject($config);
+            if (! $app instanceof \yii\base\Application) {
+                throw new ModuleConfigException($this, "Failed to initialize Yii2 app");
+            }
+            self::$cloneApps[$hash] = $app;
         }
-        \Yii::$app = $app;
+        \Yii::$app = clone self::$cloneApps[$hash];
 
         if ($logger instanceof \yii\log\Logger) {
             Yii::setLogger($logger);
